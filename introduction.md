@@ -3,7 +3,7 @@
 
 ## 程序转换技术  
 
-**程序转换(Program Transformation)**是指将一个计算机程序进行转换，并根据需要生成另一个程序的技术。大多数情况下，被转换的程序需要与原始程序在语义上等价，但在很少的情况下，转换导致程序在语义上也可与原始程序在可预见的方式上有所不同。一般来说，语义等价性是一种程序细化(Program Refinement)的概念：如果一个程序终止于原始程序终止的所有初始状态，且对于每个这样的状态，确保它可以在原始程序的某个可能的终止状态终止，则这个程序是原始程序的细化。换句话说，一个程序的细化比这个源程序更加明确，且如果两个程序互为对方的细化，则这两个程序是等价的。   
+**程序转换**(Program Transformation)是指将一个计算机程序进行转换，并根据需要生成另一个程序的技术。大多数情况下，被转换的程序需要与原始程序在语义上等价，但在很少的情况下，转换导致程序在语义上也可与原始程序在可预见的方式上有所不同。一般来说，语义等价性是一种程序细化(Program Refinement)的概念：如果一个程序终止于原始程序终止的所有初始状态，且对于每个这样的状态，确保它可以在原始程序的某个可能的终止状态终止，则这个程序是原始程序的细化。换句话说，一个程序的细化比这个源程序更加明确，且如果两个程序互为对方的细化，则这两个程序是等价的。   
 
 虽然这种转换可以是手动的人工转换，但对于更大规模的代码或者需要针对多种不同情况，使用一个程序转换系统来进行所需要的转换更加实用。程序转换可以是修改表示程序的数据结构（如抽象语法树AST）的自动程序，也可以通过使用特定模式来表示参数化源代码文本片段来指定。  
 
@@ -14,7 +14,7 @@
 
 ## 使用多面体模型表示程序  
 
-**多面体模型**是一种基于线性代数来表示程序和程序转换的计算模型，它应用了丰富的数学理论和直观的几何解释，且作为AST的改进，适合表示串行以及并行程序，并为分析和应用程序转换提供了方便的抽象模型。在程序的自动并行化和优化的处理方面上，已经通过应用多面体模型，已经取得了巨大的成效。
+**多面体模型**(Polyhedral Model)是一种基于线性代数来表示程序和程序转换的计算模型，它应用了丰富的数学理论和直观的几何解释，且作为AST的改进，适合表示串行以及并行程序，并为分析和应用程序转换提供了方便的抽象模型。在程序的自动并行化和优化的处理方面上，已经通过应用多面体模型，已经取得了巨大的成效。
 
 大致来说，多面体模型的应用框架是传统编译过程的一个插件。对它的应用分为以下步骤：
 1. 首先，从抽象语法树开始，将适合多面体模型的部分程序翻译成线性代数表示；
@@ -41,14 +41,13 @@ S6          a(j,i) = x * p(i)
 
 这类程序中的循环可以用迭代矢量——n维列向量**x**=(i<sub>1</sub>,i<sub>2</sub>,...,i<sub>n</sub>)<sup>T</sup>表示，其中i<sub>k</sub>是第k层循环的循环迭代变量（如在最外层`do i = 1, n`循环中，循环变量为i，k为1，故i<sub>k</sub>=i），n是最内层循环的层数。考虑这类静态控制集合，对于每个语句可以用两种属性来表示，以此便可以完整地描述程序的执行，这两种属性分别为：
 1. 迭代域(iteration domain)，即该语句需要执行的迭代矢量的取值的集合。  
-When a statement is surrounded with static control, its iteration domain can always be specified by a set of linear inequalities defining a polyhedron. The tern polyhedron will be used in a broad sense to denote a convex set of points in a lattice, i.e. a set of points in a Z vector space bounded by affine inequalities.  
+当语句在静态控制内时，其迭代域总是可以由一组定义多面体的线性不等式来指定。  
 S2语句的迭代矢量为(i,j)<sup>T</sup>，故它的迭代域为由i，j在迭代中的取值范围确定的矢量空间，在外层循环中，i的取值为从1到n，内层循环中，j的取值为1到i-1。故S2语句的矢量空间为由i≥1，i≤n，j≥1和j\<i确定的域，如下图：  
 ![The correspondence between static control and polyhedral domains for the statement S2 of the program above](https://github.com/wwqqqqq/loopy-introduction/raw/master/pic/polyhedron.png)  
 
 
-1. 散射函数(scattering function) θ(**x**)：an affine function specifying for each integral point in the iteration domain a new coordinate for the corresponding statement instance
-根据上下文的不同，散射函数可能有如下的几种解释：根据空间（跨处理器）分配iterations，或根据时间对它们进行排序，或两者都有。
-若是空间映射(space-mapping)的情况，对于给定的语句，θ(**x**)函数返回执行这条语句的处理器号；若用于n维的时间安排(time-schedule)，散射函数返回一个n维向量，表示该语句执行的逻辑时间(logical date)。逻辑时间为(a<sub>1</sub>...a<sub>n</sub>)的语句在对应时间为(b<sub>1</sub>...b<sub>n</sub>)的语句之前执行，当且仅当存在i，1≤i\<n，使得(a<sub>1</sub>...a<sub>i</sub>)=(b<sub>1</sub>...b<sub>i</sub>)，且a<sub>i+1</sub>\<b<sub>i+1</sub>，即不同语句的执行顺序遵循它们逻辑时间的字典序。    
+1. 散射函数(scattering function) θ(**x**)：仿射函数为迭代域中的每个整数点指定相应语句实例的新坐标。
+根据上下文的不同，这里的“坐标”可以是空间上的坐标(space-mapping)，即执行这条语句的处理器号，或者时间上的坐标(time-schedule)，在这里是一个n维向量，表示该语句执行的逻辑时间(logical date)。逻辑时间为(a<sub>1</sub>...a<sub>n</sub>)的语句在对应时间为(b<sub>1</sub>...b<sub>n</sub>)的语句之前执行，当且仅当存在i，1≤i\<n，使得(a<sub>1</sub>...a<sub>i</sub>)=(b<sub>1</sub>...b<sub>i</sub>)，且a<sub>i+1</sub>\<b<sub>i+1</sub>，即不同语句的执行顺序遵循它们逻辑时间的字典序。    
 
 这样以来，我们可以通过每个语句所处的循环嵌套情况和顺序，通过改进的AST来表示该程序的顺序执行顺序。以上面的程序为例，它的AST表示为：  
 ![AST of the program above, using polyhedral model](https://github.com/wwqqqqq/loopy-introduction/raw/master/pic/AST.png)  
@@ -57,30 +56,29 @@ S2语句的迭代矢量为(i,j)<sup>T</sup>，故它的迭代域为由i，j在�
 θ<sub>S2</sub>(**x**<sub>S2</sub>)=(0,i,1,j,0)<sup>T</sup>  
 θ<sub>S3</sub>(**x**<sub>S3</sub>)=(0,i,2)<sup>T</sup>    
 
-使用多面体模型的程序转换可以用适当的散射函数来确定。They modify the source polyhedra into target polyhedra containing the same points but in a new coordinate system, thus with a new lexicographic order.
+使用多面体模型的程序转换可以用适当的散射函数来确定。在这种程序转换中，它们将源多面体修改为包含相同点，但使用不同坐标系的目标多面体，因此具有新的字典顺序，即新的语句执行顺序。在这里，只简单叙述如何用多面体模型表示程序，就不再对使用多面体模型的程序转换加以详述了。
 
 
 ## Loo.py简介
-Today's highly heterogeneous computing landscape places a burden on programmers wanting to achieve high performance on a reasonably broad cross-section of machines.  
-To do so, computations need to be expressed in many different but mathematically equivalent ways, with, in the worst case, one variant per target machine.
-Loo.py, a programming system embedded in Python, meets this challenge by defining a data model for array-style computations and a library of transformations that operate on this model.  
-Offering transformations such as loop tiling, vectorization, storage management, unrolling, instruction-level parallelism, change of data layout, and many more, it provides a convenient way to capture, parametrize, and re-unify the growth among code variants.
-Optional, deep integration with numpy and PyOpenCL provides a convenient computing environment where the transition from prototype to high-performance implementation can occur in a gradual, machine-assisted form.  
 
-#### Introduction:  
-As computer achitectures and execution models diversify, the number of mathematically equivalent ways a single computation can be expressed is growing rapidly. Unfortunately, only very few of these program variants achieve good machine utilization, as measured in, e.g. percentages of peak memory bandwidth or floating point throughput.  
-//(传统approach)  
-Optimization compilers that, with or without the help of user annotations, equivalently rewrite user code into a higher-performing variant have been the standard solution to this issue, although the goal of a compiler whose built-in optimization passes robustly make the sometimes complicated trade-offs needed to achieve good performance has remained somewhat elusive.
-//Loo.py
-Loo.py takes a different approach. Loo.py code is most often embedded in an outer controlling program in the high-level programming language Python. The user first specifies the computation to be carried out in a language consisting of a tree of polyhedra describing loop bounds along with a list of instructions, each tied to a node in the tree of polyhedra. The specification provided by the user is deliberately only weakly ordered, providing freedom to the code generator.
+随着计算机科学的发展，应用程序的功能越来越强大，随之而来的，是需要处理的数据量、计算量的加大，和对程序运行性能的要求提升。此外，高度异构的计算环境也给如何实现在不同的机器上实现高性能程序带来了负担——同样的程序，为了在不同的机器上都能高效运行，在最坏的情况下，可能需要为每种不同计算机架构编写一种数学上等价的程序实现。
 
-Once a computation is specified as described above, its description is held within an object which is open to inspection and manipulation from within the host language. These manipulations occir by applying a variety of transformations that Loo.py exactly preserve the semantics of the specified code. This is different from the conventional compiler approach in a number of important ways:
-- Intermediate representations are deliberately open and intended to be inspected and manipulated by the user. An advanced user can easily implement their own transformations, extending the library already available.
-- Instructions, loop bounds, and transformations together uniquely specify the code to be generated. Loo.py does not attempt to be intelligent or make choices on behalf of the user, all while retaining an interface high-level enough to be usable by moderately technical end users.
-- Conventional compilers carry a considerable burden in proving that any rewriting they apply does not change the observable behavior of the program. Explicitly invoked transformations allow more flexibility. By invoking a transformation, the user may assume partial responsibility for its correctness. This puts changes within reach that would be difficult or impossible to apply with conventional compiler architectures, such as changes to globally visible data layouts.
-- Unlike traditional 'pragma'-type compiler directives, transformations are applied under the control of a full scale programming-language. This means that code generation can react to the target hardware or the workload at hand.
+Loo.py的出现正是为了在一定程度上解决这个问题。Loo.py是一个嵌入在Python中的编程系统，它为阵列式计算定义了一个数据模型，以及运行在该数据模型上的转换库，提供了循环平铺(loop tiling)，矢量化(vectorization)，存储管理(storage management)，展开(unrolling)，指令级并行化(instruction-level parallelism)，数据布局修改(change of data layout)等转换方式，为捕获，参数化和重新统一代码变体之间的增长提供了一种便捷的方法。此外，与numpy和PyOpenCL的深度集成提供了一个便捷的计算环境，使得从原型到高性能实现的转换可以以一个渐进的、机器辅助的形式进行。
 
-In addition, control from a high-level programming environment encourages reuse and abstraction within the space of transformations, which aids users in dealing with larger-scale code generation tasks, in which, possibly, a large number of similar computational kernels need to be generated.
+随着计算机架构和程序执行模型的多样化，表达单个计算的数学等价的方法的数量正在迅速增长，然而这些程序变体中只有极少数实现了良好的机器利用率——即峰值内存带宽或浮点吞吐量的百分比等。
+
+无论是否有用户注释的帮助，优化编译器都等价地将用户代码重写成更高性能的变体，这是解决这个问题的标准方法，尽管为了实现良好性能的目标，编译器的内置优化过程有时会变得十分复杂。
+
+而Loo.py则采取了不同的方法：Loo.py代码通常嵌入在高级编程语言Python的外部控制程序中。用户首先使用一种由描述循环边界的多面体树和一系列绑定到多面体树节点的指令组成的语言来指定要执行的计算。用户所提供的规范是弱有序的，以此给代码生成器提供了更多自由。用户依上所述所指定的计算，其描述就会被保存在一个对象中，该对象对于宿主语言内的检查和操作是开放的。这些操作是通过应用各种Loo.py转换库中的转换来实现的，Loo.py中的这些转换完全保留了源代码中的语义。
+
+这种实现方式与传统编译器有着以下方面的重要区别：
+
+- 代码的中间表示是有意开放给用户，并由用户进行检查和操作的。高级用户可以轻松实现自定义的转换，以此扩充已有的转换库。
+- 指令、循环边界和转换，在一起唯一地指定要生成的代码。Loo.py不会试图自作主张地代表用户做出选择，而是同时保留一个足够高层的接口，以便开发人员/有一定技术能力的终端用户使用。
+- 传统的编译器需要证明它们对源程序进行的任何重写都不会在可观察到的层面上改变程序的运行行为，这给编译器带来了很大的负担和掣肘。而显式地调用一些转换允许了更多的灵活性：通过显式调用一个转换,程序运行的正确性可以部分由用户来承担，这使得在传统编译体系中难以或不可能实现的变化可以被应用，例如全局可见数据布局的变化。
+- 与传统的'pragma'-type编译器指令不同，Loo.py中的转换是在完整规模的编程语言的控制下被应用的，这意味着代码生成可以对于目标机器的硬件或者目前的工作负载的不同或变化作出反应。
+
+此外，来自高级编程环境的控制鼓励在转换空间内的重新使用和抽象，这有助于用户处理更大规模的代码生成任务，其中，可能需要生成大量相似的计算内核。
 
 
 ## 参考文献
