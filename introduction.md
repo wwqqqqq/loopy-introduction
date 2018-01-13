@@ -66,7 +66,7 @@ S2语句的迭代矢量为(i,j)<sup>T</sup>，故它的迭代域为由i，j在�
 | --------- | --------- |
 | 内部结点是循环的迭代变量，叶结点是语句 | 内部结点是非终结符，叶结点为终结符 |
 | 以迭代变量标识循环，循环内/外部变量的分析较为方便 | 按传统结构，仅分析循环体的语法结构，不关心循环条件 |
-| 以循环的迭代域构造多面体，并用数学方法，完成高效的程序转换 | 程序转换的手段相比多面体模型较为复杂 |
+| 以循环的迭代域构造多面体，并用数学方法，完成高效的程序转换 | 程序转换相比多面体模型较为复杂 |
 | 可以针对一些语法中体现不出的进行程序转换，如循环倒置(loop inversion)，循环平铺(loop tiling)等 | 只能从语法的角度对程序进行分析优化，不适合用于对复杂程序进行结构重构 |
 
 
@@ -221,6 +221,34 @@ for (int i_outer = 0; i_outer <= (-1 + ((3 + n) / 4)); ++i_outer)
 ```
 注意：如果没有对于向量长度为4的正整数倍的假设，可能会产生更加通用但效率较低的代码。
 
+
+## Loo.py的实现
+### Loo.py Kernel的数据结构
+
+Loo.py内核是一个`LoopKernel`类。它的属性(attributes)有：
+
+- `domains`：一个元素是`islpy.BasicSet`的类的实例的列表，每个实例表示一个循环域树(domain tree)。 
+- `instructions`：一个元素为`InstructionBase`类实例(例如`Assignment`类)的列表。
+- `args`：一个元素为`loopy.KernelArgument`类的列表。
+- `schedule`：*None*或一个元素为`loopy.schedule.ScheduleItem`的列表。
+- `name`
+- `preambles`
+- `preamble_generators`
+- `assumptions`：一个`islpy.BasicSet`类的参数域。
+- `local_sizes`
+- `temporary_variables`：一个从变量名映射到`loopy.TemporaryVariables`类的dict。
+- `iname_to_tag`：一个iname(字符串类型)映射到`loopy.kernel.data.IndexTag`类型的dict。
+- `function_manglers`
+- `symbol_manglers`
+- `substitutions`：从替换名到`SubstitutionRule`类对象的映射。
+- `iname_slab_increments`：一个inames映射到`(lower_incr, upper_incr)`二元组的dict，这个二元组被用来在执行过程中产生条件较少的'bulk'块。
+- `loop_priority`：内核约束的优先级的frozenset。每一个这样的约束都是一个inames的元组。元组中出现较早的iname会被更早地调度。仅用于具有非并行实现标记的iname。
+- `silenced_warning`
+- `applied_iname_rewrites`
+- `cache_manager`
+- `options`：`loopy.Options`类的一个实例。
+- `state`：从`kernel_state`类中得到的内核状态的值。
+- `target`：`loopy.TargetBase`的子类
 
 
 
