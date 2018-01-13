@@ -91,16 +91,18 @@ Loo.py的出现正是为了在一定程度上解决这个问题。Loo.py是一�
 此外，来自高级编程环境的控制鼓励在转换空间内的重新使用和抽象，这有助于用户处理更大规模的代码生成任务，其中，可能需要生成大量相似的计算内核。
 
 
-下面，首先由一个例子说明Loo.py的工作方式：  
+## Loo.py的工作方式 
 
+### Loo.py的数据模型 
+以一个简单的例子进行说明：  
 *注：下面的程序是使用isl库的语法进行编写的，isl是一种为了多面体模型的整数集上的库，具体语法见*[*isl: An integer set library for the polyhedral model.*](https://link.springer.com/chapter/10.1007/978-3-642-15582-6_49)
-```isl
+```Python
 knl = loopy.make_kernel(
         "{ [i]: 0<=i<n }", #loop domain
-        "out[i] = 2*a[i])  #instructions
+        "out[i] = 2*a[i]"  #instructions
+)
 ```
-**Loo.py的数据模型**：  
-通过上面的程序，可以看出Loo.py内核(Loo.py kernel)包含两个主要的组成部分：循环域和指令。  
+通过上面的程序，可以看出，Loo.py内核(Loo.py kernel)包含两个主要的组成部分：循环域和指令。  
 
 1. 循环域(loop domain)在这里是`{[i]: 0<=i<n}`。它定义了将要执行指令的整型循环变量值。在Loo.py中，将这种循环变量称为iname。如若在上文所示程序的循环中`{ [i]: 0<=i<n }`，'i'是唯一的iname。循环域由仿射等式/不等式给出。这里的i的循环域为[0,n)上的所有整数，但整数可分割型约束也是允许的。在没有可分型约束的情况下，循环域是凸集。  
 在这个例子中，n是一个用户给出的参数而不是iname，它决定了需要操作的向量a和out的长度。Loo.py允许用户给出关于参数的其他信息来帮助生成更高质量的代码。如在上述程序中，若用户已知n是一个可以被4整除的正数，用户可以在程序中添加假设(assumption)：`assuptions="n > 0 and n mod 4 = 0"`。假设同样是使用isl语法编写的。  
@@ -108,7 +110,7 @@ knl = loopy.make_kernel(
 2. 指令：`out[i] = 2*a[i]`。  
 指令是数组元素之间的标量赋值，由一个左值和等号右侧的表达式组成。表达式包括常用数学运算符，也可以调用OpenCL中定义的，或用户自定义的函数(Loo.py为用户自定义函数、符号、操作符提供编程接口)。
 
-**运行Loo.py内核**  
+### 运行Loo.py内核
 使用Loo.py的宿主语言Python来运行上文例中所定义的Loo.py内核knl：  
 ```Python
 eve, (out,) = knl(queue, a=x_vec_dev)
@@ -117,8 +119,8 @@ assert (out.get() == (2*x_vec_dev).get()).all()
 这个运行时功能使用PyOpenCL。`queue`是一个PyOpenCL中定义的对象`CommandQueue`，对应了一个OpenCL设备数组(device array)——一个驻留在OpenCL全局设备内存中的numpy数组的工作类。PyOpenCL的设备数组，与numpy数组相似，包括类型、形状和内存布局信息。`assert`语句将数据传回给主机，传到新建立的numpy数组中，并检查计算结果是否正确。  
 Loo.py使用运行时类型`x_vec_dev`来专门化内核。在没有其他信息的情况下，基于对`out`的单一赋值，类型推断可以判断出`out`是与输入数组`a`相同的单精度浮点数数组。此外，由于Loo.py可以通过数组`a`的数组长度自行得到n的大小，所以参数`n`实际上是不需要传递给内核的。
 
-**指令排序**
-```
+### 指令排序
+```Python
 knl = loopy.make_kernel(
         "{ [i,j,ii,jj]: 0<=i,j,ii,jj<n }",
         """
@@ -160,7 +162,7 @@ knl = loopy.make_kernel(
 指令所引用的iname总是属于活跃iname集。此外，活跃的iname沿着依赖关系的传递闭包传播。
 
 例：  
-```
+```Python
 z = expr(iname) {id=insn0}
 y = expr(z) {id=insn1}
 z = expr(y) {id=insn2}
@@ -170,7 +172,54 @@ z = expr(y) {id=insn2}
 最终得到的以上内核的循环嵌套、循环间顺序和依赖关系如下图所示：  
 ![Order and dependency](https://github.com/wwqqqqq/loopy-introduction/raw/master/pic/dependency.png)  
 
+### 内核转换(Kernel Transformation)
+Loo.py中包括一个转换库，可以应用到用以上数据模型表示的内核中。一般来说，这些转换函数可以通过一些指定的方法，将旧的内核转换称为新的内核。值得注意的是，Loo.py的内核实例一旦建立后，是不可修改的，故这些内核转换是没有副作用的。  
 
+下面，举出几个常用内核转换的例子：
+1. `split_name`  
+
+内核转换`split_name`将一个iname 'OLD'，使用两个新的iname'INNER'和'OUTER'代替，`OLD = INNER + GROUP_SIZE * OUTER`。以下面的程序为例：
+```Python
+knl = loopy.make_kernel(
+        "{ [i]: 0<=i<n}",
+        "a[i] = 0"
+)
+knl = loopy.split_iname(knl, "i", 16)
+```
+得到的新内核使用C语言表示为：
+```C
+for (int i_outer = 0; i_outer <= (-1 + ((15 + n) / 16)); ++i_outer)
+        for (int i_inner = 0; i_inner <= 15; ++i_inner)
+                if ((-1 + -1 * i_inner + -16 * i_outer + n) >= 0)
+                        a[i_inner + i_outer * 16] = 0.0f;
+```
+可以看出，为了保持结果的正确性，保留原始边界的新的边界条件被自动引入。
+
+2. `tag_inames`
+
+除了`for`循环外，Loo.py还支持一些其他结构的循环。Loopy中每个iname都带有一个标记(tag)。如"unr"标记来表示iname是用于实施循环展开(loop unrolling)。`tag_inames`转换用于提供这些标记。当使用`split_iname`来建立了定长的子循环后，可以将得到的定长循环展开：
+```Python
+knl = loopy.make_kernel(
+        "{ [i]: 0<=i<n}",
+        "a[i] = 0",
+        assuptions="n>=0 and n mod 4 = 0"
+)
+knl = loopy.split_iname(knl, "i", 4)
+knl = loopy.tag_inames(knl, {"i_inner": "unr:})
+```
+得到的新内核使用C语言表示为：
+```C
+for (int i_outer = 0; i_outer <= (-1 + ((3 + n) / 4)); ++i_outer)
+{
+        a[0 + i_outer + 4] = 0.0f;
+        a[1 + i_outer + 4] = 0.0f;
+        a[2 + i_outer + 4] = 0.0f;
+        a[3 + i_outer + 4] = 0.0f;
+}
+```
+注意：如果没有对于向量长度为4的正整数倍的假设，可能会产生更加通用但效率较低的代码。
+
+ 
 
 
 
