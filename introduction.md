@@ -97,7 +97,7 @@ Loo.py的出现正是为了在一定程度上解决这个问题。Loo.py是一�
 
 ### Loo.py的数据模型 
 以一个简单的例子进行说明：  
-*注：下面的程序是使用isl库的语法进行编写的，isl是一种为了多面体模型的整数集上的库，具体语法见*[*isl: An integer set library for the polyhedral model.*](https://link.springer.com/chapter/10.1007/978-3-642-15582-6_49)
+*注：下面的程序是使用isl库的语法进行编写的，isl是一种多面体模型的整数集上的库，具体语法见*[*isl: An integer set library for the polyhedral model.*](https://link.springer.com/chapter/10.1007/978-3-642-15582-6_49)
 ```Python
 knl = loopy.make_kernel(
         "{ [i]: 0<=i<n }", #loop domain
@@ -230,7 +230,7 @@ Loo.py内核是一个`LoopKernel`类。它的属性(attributes)有：
 - `domains`：一个元素是`islpy.BasicSet`的类的实例的列表，每个实例表示一个循环域树(domain tree)。 
 - `instructions`：一个元素为`InstructionBase`类实例(例如`Assignment`类)的列表。
 - `args`：一个元素为`loopy.KernelArgument`类的列表。
-- `schedule`：*None*或一个元素为`loopy.schedule.ScheduleItem`的列表。
+- `schedule`：*None*或一个元素为`loopy.schedule.ScheduleItem`类的列表。
 - `name`
 - `preambles`
 - `preamble_generators`
